@@ -106,7 +106,7 @@ class Model:
             lora_int_id=1, # Use a fixed integer ID for the LoRA adapter
             lora_path=LORA_MODEL_ID,
         )
-        self.system_prompt = os.environ["SYSTEM_PROMPT"]
+        self.system_prompt = os.environ["SYSTEM_PROMPT"].encode().decode('unicode_escape')
         volume.commit()
 
 
