@@ -1,7 +1,7 @@
 # **LoRAfrica: Modal Serveless Compute with Streamlit**
 ![LoRAfrica_Scaling_LLM Fine_Tuning_for_African_History.jpg](img/LoRAfrica_Deployment.jpg)
 
-This project represents the final phase of LoRAfrica deployment, making the system accessible to users on the web through scalable serverless infrastructure using Modal and an interactive frontend built with Streamlit.
+This project represents the final phase of [LoRAfrica](https://github.com/daniau23/LoRAfrica) deployment, making the system accessible to users on the web through scalable serverless infrastructure using Modal and an interactive frontend built with Streamlit.
 
 ## **Aim**
 Deploy LoRAfrica via Modal and Streamlit for seamless web-based user interaction.
