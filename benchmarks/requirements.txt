@@ -1,0 +1,53 @@
+# Python version (install separately or with pyenv / venv)
+# python==3.11
+scikit-learn==1.5.0
+seaborn==0.13.2
+plotly==5.22.0
+pandas==2.2.2
+matplotlib==3.10.8
+scipy==1.10.1
+numpy==1.26.4
+pytest==8.4
+nltk==3.9.1
+sentence-transformers==2.7.0
+accelerate==1.12.0
+transformers==4.57.6
+# transformers>=4.57.6
+# git+https://github.com/felipemaiapolo/tinyBenchmarks
+# lm_eval==0.4.9.2
+# bert-score==0.3.13
+# deepspeed==0.18.4
+# wandb==0.19.11
+datasets==4.5.0
+evaluate==0.4.6
+python-dotenv==1.1.0
+tensorflow==2.20.0
+tf-keras==2.20.1
+ctransformers==0.2.27
+fastapi==0.129.0
+fastapi-cli==0.0.21              
+fastapi-cloud-cli==0.12.0 
+uvicorn==0.42.0
+peft==0.18.1
+# langfuse==3.14.3
+# litellm==1.81.13
+# # llvmlite<=0.46.0
+# modal==1.3.3
+# sagemaker==3.4.1
+
+# ports
+# 8888,7860,8080,8000
+# (you can increase the container 
+# and volume size if you want to install more packages)
+# Runpod template A40 GPU; container 30, volume 50 
+
+# FastAPI_Naive_Benchmark
+# In case of typing_extensions import error
+# pip install --upgrade typing-extensions pydantic fastapi
+# vllm_benchmark
+# install vllm separately, as it will make some changes to packages 
+# if not installed separately, pip will be caught in an endless loop and crash
+# use 0.14.1 preferably
+# pip install vllm==0.14.1 or 
+# pip install vllm==0.18.0
+# pip install vllm[bench]
