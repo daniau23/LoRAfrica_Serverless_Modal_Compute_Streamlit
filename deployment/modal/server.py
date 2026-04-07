@@ -262,7 +262,7 @@ class Model:
             # Optional: Adjust top_p if desired.
             # Might make this available for client side for users or limit it to .80 or .90,
             # while maintaining temperature which is needed for accuracy
-            top_p=0.9, 
+            # top_p=0.9, 
             seed=42
             # vllm handles this internally, but you can adjust parameters like top_p or stop tokens as needed            
             # stop=[""] # Stop generation when the end-of-sequence token is generated
@@ -351,7 +351,7 @@ class Model:
             # Optional: Adjust top_p if desired.
             # Might make this available for client side for users or limit it to .80 or .90,
             # while maintaining temperature which is needed for accuracy
-            top_p=0.9, 
+            # top_p=0.9, 
             # vllm handles this internally, but you can adjust parameters like top_p or stop tokens as needed            
             # stop=[""] # Stop generation when the end-of-sequence token is generated
         )
