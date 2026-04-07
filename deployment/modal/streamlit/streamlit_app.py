@@ -10,85 +10,66 @@ load_dotenv('.env')
 URL = os.getenv("MODAL_URL") or st.secrets["MODAL_URL"]
 
 # If I wanted to use FastAPI as a proxy instead of calling Modal directly, I would set URL to my FastAPI endpoint, e.g.:
-# ✅ Now pointing to FastAPI proxy (NOT Modal)
 # URL = "http://localhost:8000/chat"
+
 MAX_TOKENS = 128
 TEMPERATURE = 0.1
-# MAX_HISTORY = 5  # ✅ LIMIT HISTORY
-# 5 user messages + 5 assistant messages = 10
-MAX_TURNS = 5  # ✅ Keep last 5 turns (1 turn = user + assistant)
+
+# MAX_HISTORY = 5  # ❌ Not needed since backend manages context
+# MAX_TURNS = 5  # ❌ Not needed anymore
 
 
+# ❌ Not needed since backend handles context/memory
+# def trim_history(messages, max_turns=3):
+#     """
+#     Keep only the last N turns (1 turn = user + assistant).
+#     Ensures conversation starts with a user message.
+#     """
+#     if not messages:
+#         return []
+#
+#     max_messages = max_turns * 2
+#     trimmed = messages[-max_messages:]
+#
+#     if trimmed and trimmed[0]["role"] == "assistant":
+#         trimmed = trimmed[1:]
+#
+#     return trimmed
 
-def trim_history(messages, max_turns=3):
-    """
-    Keep only the last N turns (1 turn = user + assistant).
-    Ensures conversation starts with a user message.
-    """
-    if not messages:
-        return []
-
-    max_messages = max_turns * 2  # Each turn has 2 messages (user + assistant)
-    # Trimmed 
-    trimmed = messages[-max_messages:]  # <-- use slice, not single index
-
-
-    # Ensure it starts with a user message
-    if trimmed and trimmed[0]["role"] == "assistant":
-        trimmed = trimmed[1:]
-
-    return trimmed
 
 # Page Setup
 st.set_page_config(page_title="LoRAfrica Chat", layout="wide")
 st.title("🌍 LoRAfrica - African History Assistant")
 
-# Session State
+# Session State (UI only)
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Side Bar
 st.sidebar.header("⚙️ Settings")
 
-model_choice = st.sidebar.selectbox("Select a Model", ["lora", "base"],
-                    help="Lora is the Model Dedicated to African History")
-use_lora = "lora" in model_choice.lower().strip() # if True, Lora Model will be used
+model_choice = st.sidebar.selectbox(
+    "Select a Model",
+    ["lora", "base"],
+    help="Lora is the Model Dedicated to African History"
+)
+use_lora = "lora" in model_choice.lower().strip()
 
-# No more additional temperature input for now, keeping it fixed for concise output, but this can be re-enabled if needed
-# # ✅ User-controlled temperature
-# temperature_slider = st.sidebar.slider(
-#     "Response Temperature",
-#     min_value=0.0,
-#     max_value=1.0,
-#     value=0.1,  # default
-#     step=0.05,
-#     help="Higher values = more creative responses, lower = more deterministic"
-# )
+temperature = TEMPERATURE
 
-# temperature_input = st.sidebar.number_input(
-#     "Temperature (type)",
-#     min_value=0.0,
-#     max_value=1.0,
-#     value=temperature_slider,
-#     step=0.01,
-#     format="%.2f"
-# )
-# temperature = temperature_input
-
-temperature = TEMPERATURE # for concise output
-# ✅ Clear Chat button
+# Clear Chat button (UI only)
 if st.sidebar.button("🗑️ Clear Chat"):
     st.session_state.messages = []
     st.rerun()
 
-# Display Chat History
+# Display Chat History (UI only)
 for message in st.session_state.messages:
     with st.chat_message(message['role']):
         st.markdown(message['content'])
 
 # User Input
 if prompt := st.chat_input("I'm LoRAfrica, your African History Expert..."):
-    # Append user message to session state
+    # Append user message to session state (UI only)
     st.session_state.messages.append({"role": "user", "content": prompt})
     
     # Display user message immediately
@@ -97,8 +78,8 @@ if prompt := st.chat_input("I'm LoRAfrica, your African History Expert..."):
     
     # Send request to backend
     payload = {
-        # "prompt": st.session_state.messages[-1]['content'],  # Send the latest user message as prompt
-        "messages": st.session_state.messages, # Send the latest user message + preivous messages as prompt
+        "prompt": prompt,  # ✅ Only send latest prompt
+        # "messages": st.session_state.messages,  # ❌ REMOVE (causes repeated responses)
         "use_lora": use_lora,
         "max_tokens": MAX_TOKENS,
         "temperature": temperature,
@@ -114,10 +95,10 @@ if prompt := st.chat_input("I'm LoRAfrica, your African History Expert..."):
         try:
             response = requests.post(URL, json=payload, stream=True)
 
-            if response.status_code !=200: # Check request status code
+            if response.status_code != 200:
                 st.error(f"Error: {response.status_code} | {response.text}")
 
-            else: # Streaming the response
+            else:
                 for line in response.iter_lines():
 
                     if not line:
@@ -127,11 +108,11 @@ if prompt := st.chat_input("I'm LoRAfrica, your African History Expert..."):
                     if line.startswith("data: "):
                         data = line[6:].strip()
 
-                        if data  == "[DONE]":
+                        if data == "[DONE]":
                             break
-                        try: # Checking Json feedback
+                        try:
                             chunk_json = json.loads(data)
-                            token  = chunk_json["choices"][0]["delta"].get("content", "") 
+                            token = chunk_json["choices"][0]["delta"].get("content", "") 
 
                             full_response += token
 
@@ -139,23 +120,23 @@ if prompt := st.chat_input("I'm LoRAfrica, your African History Expert..."):
                             response_container.markdown(full_response + "▌")
                         except json.JSONDecodeError:
                             continue
+
                     response_container.markdown(full_response)
+
         except Exception as e:
             st.error(f"Request failed: {e}")
             full_response = "Error generating response."
 
-    # Save assistant response
+    # Save assistant response (UI only)
     st.session_state.messages.append(
         {
             "role": "assistant",
             "content": full_response
         }
     )
-    # ✅ Enforce max history again
-    # st.session_state.messages = st.session_state.messages[-MAX_HISTORY:]
-    
-    # ✅ Trim history again to enforce max turns after adding assistant
-    st.session_state.messages = trim_history(
-        st.session_state.messages,
-        max_turns=MAX_TURNS # keep the last 10 messages (5 users + 5 assistant response)
-    )
+
+    # ❌ No trimming needed (backend handles context)
+    # st.session_state.messages = trim_history(
+    #     st.session_state.messages,
+    #     max_turns=MAX_TURNS
+    # )
