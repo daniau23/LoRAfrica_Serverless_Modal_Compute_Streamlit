@@ -31,7 +31,7 @@ PASSPORT_PATTERN = re.compile(r'\b[PL][A-Z]\d{7}\b', re.IGNORECASE)
 # Load needed configuration
 BASE_MODEL_ID = "microsoft/Phi-4-mini-instruct"
 LORA_MODEL_ID = "DannyAI/phi4_african_history_lora_ds2_axolotl"
-SYSTEM_PROMPT = "You are a helpful AI assistant specialised in African history which gives concise answers to questions asked."
+# SYSTEM_PROMPT = "You are a helpful AI assistant specialised in African history which gives concise answers to questions asked."
 # Define the Modal app and image with necessary dependencies
 app = modal.App(
     "LoRAfrica-Modal-Inference",
@@ -63,7 +63,8 @@ volume = modal.Volume.from_name("llm-models", create_if_missing=True)
     image=image,# Add the vLLM image with necessary dependencies
     volumes={"/models": volume},# Add a shared volume for model caching
     secrets =[modal.Secret.from_name("huggingface-secret"),
-              modal.Secret.from_name("langsmith-secret")
+              modal.Secret.from_name("langsmith-secret"),
+              modal.Secret.from_name("system-prompt")
               ],# Add your Hugging Face token as a secret
     container_idle_timeout=200, # 300  is 5 minutes
     allow_concurrent_inputs=100, # Allow up to 100 concurrent requests
@@ -105,6 +106,7 @@ class Model:
             lora_int_id=1, # Use a fixed integer ID for the LoRA adapter
             lora_path=LORA_MODEL_ID,
         )
+        self.system_prompt = os.environ["SYSTEM_PROMPT"]
         volume.commit()
 
 
@@ -186,20 +188,25 @@ class Model:
 
     # Normalise input (LiteLLM + legacy support)
     def _normalise_messages(self,request):
-        if "messages" in request:
-            messages = request["messages"]
-
-            if not messages or messages[0]["role"] != "system":
-                messages.insert(0, {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                })
-        else:
-            messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": request["prompt"]}
-            ]
-
+        """
+        FOR MORE SECURITY !!!
+        Hardened normalization: Strips client-side system prompts and 
+        injects the 'Obsidian Firewall' from Modal Secrets.
+        """
+        # Get the original messages from the request
+        input_messages = request.get("messages", [])
+        
+        # Extract ONLY user and assistant roles 
+        # This effectively deletes any "Ignore previous instructions" system prompts sent by a user
+        filtered_messages = [m for m in input_messages if m.get("role") in ["user", "assistant"]]
+        
+        # Handle legacy 'prompt' key requests (e.g., from older benchmark scripts)
+        if not filtered_messages and "prompt" in request:
+            filtered_messages = [{"role": "user", "content": request["prompt"]}]
+            
+        # Final Construction: Your Secret System Prompt + The Cleaned Conversation
+        messages = [{"role": "system", "content": self.system_prompt}] + filtered_messages
+        
         return messages
     
     # Log Non streaming
