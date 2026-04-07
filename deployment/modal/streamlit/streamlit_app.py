@@ -50,11 +50,9 @@ if "messages" not in st.session_state:
 # Side Bar
 st.sidebar.header("⚙️ Settings")
 
-model_choice = st.sidebar.selectbox("Select a Model", ["LoRAfrica", "Base Model"],
+model_choice = st.sidebar.selectbox("Select a Model", ["lora", "base"],
                     help="Lora is the Model Dedicated to African History")
-# use_lora = "lora" in model_choice.lower().strip() # if True, Lora Model will be used
-# if True, LoRAfrica Model will be used, I believe this is better 
-use_lora = True if model_choice == "LoRAfrica" else False 
+use_lora = "lora" in model_choice.lower().strip() # if True, Lora Model will be used
 
 # No more additional temperature input for now, keeping it fixed for concise output, but this can be re-enabled if needed
 # # ✅ User-controlled temperature
