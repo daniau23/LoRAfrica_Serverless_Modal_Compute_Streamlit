@@ -85,7 +85,7 @@ Congrats! You have Benchmarked the LLM with Naive and vLLM Approaches.  Now the 
 *NB:* Add same ```.env``` variables (LangSmith, HuggingFace) as Modal secrets to enable logging and avoid runtime errors..
 
 ### **Streamlit Rendering**
-- The Streamlit folder has your client file; ```streamlit_client.py``` (frontend) for rendering user interface and usage. Simply run it using ```streamlit run streamlit_client.py``` in the CMD.
+- The Streamlit folder has your client file; ```streamlit_app.py``` (frontend) for rendering user interface and usage. Simply run it using ```streamlit run streamlit_client.py``` in the CMD.
 
 That's it!! You have your working project all set and ready to GO! 🚀
 
