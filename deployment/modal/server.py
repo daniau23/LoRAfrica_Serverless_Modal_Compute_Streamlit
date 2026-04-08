@@ -249,8 +249,8 @@ class Model:
 
             # Tags Generated for further logging
             run.tags = run.tags or []
-            run.tags.append('lora' if use_lora else "base")
-            run.tags.append('long-gen' if max_tokens > 50 else "short-gen")
+            run.tags.append("lora" if use_lora else "base")
+            run.tags.append("long-gen" if max_tokens > 50 else "short-gen")
 
             # Log max tokens as event
             run.add_event(
