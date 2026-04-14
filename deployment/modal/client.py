@@ -33,8 +33,7 @@ import os
 # Loading Environment Variables
 load_dotenv('.env')
 URL = os.getenv("MODAL_URL")
-
-SYSTEM_PROMPT = "You are a helpful AI assistant specialised in African history which gives concise answers to questions asked."
+SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT")
 
 # ---------------------
 # Helpers
