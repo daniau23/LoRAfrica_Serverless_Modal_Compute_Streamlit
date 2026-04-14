@@ -33,7 +33,11 @@ import os
 # Loading Environment Variables
 load_dotenv('.env')
 URL = os.getenv("MODAL_URL")
-SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT")
+# use a .txt for your system prompt in the .env file, e.g. SYSTEM_PROMPT=system_prompt.txt
+SYSTEM_PROMPT = open(os.getenv("SYSTEM_PROMPT")).read() 
+# Now fixed the issue with SYSTEM_PROMPT not being defined. 
+# It should now print the content of the system prompt file specified in the .env file.
+# print(SYSTEM_PROMPT) 
 
 # ---------------------
 # Helpers
