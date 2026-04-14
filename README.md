@@ -110,3 +110,7 @@ Overall, the project highlights how modern tools can be orchestrated to deliver 
 - Deployed the model using serverless GPU infrastructure via Modal
 - Developed an interactive frontend using Streamlit for real-time user interaction
 - Integrated LangSmith for monitoring, logging, and PII redaction
+
+Article Links
+- [ReadyTensor](https://app.readytensor.ai/publications/lorafrica-modal-serverless-compute-deployment-with-streamlit-uSaVNazSK0yQ)
+- [Streamlit App](https://lorafrica.streamlit.app/)
