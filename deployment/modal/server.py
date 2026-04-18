@@ -8,7 +8,21 @@ import os
 import json 
 import re
 import copy
+import random
 
+
+TOP_K = 40
+TOP_P = 0.9
+
+# Seeding control
+DEFAULT_SEED = 42  # ADDED: centralised deterministic seed
+def get_seed(regenerate: bool=False)-> int:
+    """Helper function to control seeding for generation and regeneration"""
+    # For regeneration, we want a different seed to increase diversity
+    # For initial generation, we can use a fixed seed for reproducibility        
+    return random.randint(0,1_000_000) if regenerate else  DEFAULT_SEED
+    
+    
 # Relevant Links
 # https://pypi.org/project/presidio-anonymizer/#description
 # https://pypi.org/project/presidio-analyzer/#description
@@ -223,6 +237,10 @@ class Model:
         max_tokens: int = 128,
         temperature: float = 0.1,
         use_lora: bool = False,
+        seed: int = DEFAULT_SEED,
+        regenerate: bool = False, # To track regenerations with different seeds
+        regeneration_id: str | None = None, # To link regenerations together
+        regeneration_index: int = 0 # To track the number of regenerations for a given request
     ) -> str:
         from vllm import SamplingParams
 
@@ -245,12 +263,29 @@ class Model:
                 "use_lora": use_lora,
                 "max_tokens": max_tokens,
                 "temperature": temperature,
+                # track whether this is a 
+                # regeneration or an initial generation 
+                # for better analysis of the impact of temperature 
+                # changes in regenerations
+                "regenerate": regenerate,
+                "seed":seed,
+                "seed_type": "random" if seed != DEFAULT_SEED else "fixed",
+                "regeneration_id": regeneration_id,
+                "regeneration_index": regeneration_index
             }
 
             # Tags Generated for further logging
             run.tags = run.tags or []
             run.tags.append("lora" if use_lora else "base")
             run.tags.append("long-gen" if max_tokens > 50 else "short-gen")
+            
+            if regeneration_id:
+                run.tags = list(set(run.tags or []))  # prevent duplication
+                run.tags.extend([
+                    "regeneration",
+                    f"regen_id:{regeneration_id}",
+                    f"regen_idx:{regeneration_index}"
+                ])
 
             # Log max tokens as event
             run.add_event(
@@ -261,6 +296,20 @@ class Model:
                 }
             )
 
+            # For regeneration events, 
+            # we log an additional event to track the change in 
+            # temperature and seed
+            run.add_event({
+                        "name": "regeneration_metadata",
+                        "value": {
+                            "regeneration_id": regeneration_id,
+                            "regeneration_index": regeneration_index,
+                            "regenerate": regenerate
+                        },
+                        "tags": ["regeneration"]
+            }
+            )
+
         request_id = str(uuid.uuid4()) # Request ID 
         # Set up sampling parameters for generation
         sampling_params = SamplingParams(
@@ -269,8 +318,9 @@ class Model:
             # Optional: Adjust top_p if desired.
             # Might make this available for client side for users or limit it to .80 or .90,
             # while maintaining temperature which is needed for accuracy
-            # top_p=0.9, 
-            seed=42
+            top_p=TOP_P, # Optional: Adjust top_p if desired.
+            top_k=TOP_K, # Optional: Adjust top_k for nucleus sampling (e.g., 40 or 50) to control diversity
+            seed=seed, # Seed for reproducibility (can be overridden for regeneration)
             # vllm handles this internally, but you can adjust parameters like top_p or stop tokens as needed            
             # stop=[""] # Stop generation when the end-of-sequence token is generated
         )
@@ -310,7 +360,12 @@ class Model:
         messages: list[dict],
         max_tokens: int = 128,
         temperature: float = 0.1,
-        use_lora: bool = False
+        use_lora: bool = False,
+        # To track regenerations with different seeds
+        seed: int = DEFAULT_SEED,
+        regenerate: bool = False,
+        regeneration_id: str | None = None,
+        regeneration_index: int = 0
     ):
         from vllm import SamplingParams
 
@@ -326,19 +381,32 @@ class Model:
                                 {"messages": copy.deepcopy(messages)}
                                 )["messages"]
         anonymized_prompt = self.hybrid_anonymize_text(prompt)
-
+        
         # LangSmith Log Inputs
         if run:
             run.inputs = {
                 "messages":anonymized_messages,
                 "prompt":anonymized_prompt,
-                "use_lora": use_lora
+                "use_lora": use_lora,
+                "max_tokens": max_tokens,
+                "seed":seed,
+                "regenerate": regenerate,
+                "seed_type": "random" if seed != DEFAULT_SEED else "fixed",
+                "regeneration_id": regeneration_id,
+                "regeneration_index": regeneration_index,
             }
 
             # Tags
             run.tags = run.tags or []
             run.tags.append('lora' if use_lora else "base")
             run.tags.append('long-gen' if max_tokens > 50 else "short-gen")
+            if regeneration_id:
+                run.tags = list(set(run.tags or []))  # prevent duplication
+                run.tags.extend([
+                    "regeneration",
+                    f"regen_id:{regeneration_id}",
+                    f"regen_idx:{regeneration_index}"
+                ])
 
             # Log max tokens as event
             run.add_event(
@@ -349,16 +417,27 @@ class Model:
                 }
             )
 
+            # For regeneration events
+            run.add_event({
+                    "name": "regeneration_metadata",
+                    "value": {
+                    "id": regeneration_id,
+                    "index": regeneration_index
+                    },
+                    "tags": ["regeneration", "stream"]
+            })
+
         request_id = str(uuid.uuid4()) # Request ID 
         # Set up sampling parameters for generation
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
             temperature=temperature,
-            seed=42,
+            seed=seed, # Seed for reproducibility (can be overridden for regeneration)
             # Optional: Adjust top_p if desired.
             # Might make this available for client side for users or limit it to .80 or .90,
             # while maintaining temperature which is needed for accuracy
-            # top_p=0.9, 
+            top_p=TOP_P, # Optional: Adjust top_p if desired.
+            top_k=TOP_K # Optional: Adjust top_k for nucleus sampling (e.g., 40 or 50) to control diversity
             # vllm handles this internally, but you can adjust parameters like top_p or stop tokens as needed            
             # stop=[""] # Stop generation when the end-of-sequence token is generated
         )
@@ -410,6 +489,12 @@ class Model:
         temperature = request.get("temperature", 0.1)
         use_lora = request.get("use_lora", True)
         stream = request.get("stream", False)
+        # Get seed based on whether this is a regeneration or not
+        regenerate = request.get("regenerate", False)
+        regeneration_id = request.get("regeneration_id") or str(uuid.uuid4())
+        # always compute index deterministically
+        regeneration_index = int(request.get("regeneration_index", 0))
+        seed = get_seed(regenerate) 
 
 
         # STREAMING RESPONSE
@@ -421,6 +506,10 @@ class Model:
                         max_tokens=max_tokens,
                         temperature=temperature,
                         use_lora=use_lora,
+                        seed=seed,
+                        regenerate=regenerate,
+                        regeneration_id=regeneration_id,
+                        regeneration_index=regeneration_index
                     ):
                         yield {"data": json.dumps(chunk)}
 
@@ -436,7 +525,11 @@ class Model:
         response_text,prompt_text = await self._generate(
             messages, max_tokens=max_tokens, 
             temperature=temperature, 
-            use_lora=use_lora
+            use_lora=use_lora,
+            seed=seed,
+            regenerate=regenerate,
+            regeneration_id=regeneration_id,
+            regeneration_index=regeneration_index
         )
 
 
