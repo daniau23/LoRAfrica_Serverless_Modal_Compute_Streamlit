@@ -11,8 +11,8 @@ import copy
 import random
 
 
-TOP_K = 40
-TOP_P = 0.9
+TOP_K = 40 # Adjust top_k for nucleus sampling (e.g., 40 or 50) to control diversity. Example 40, 50 (lower is less random, higher is more random)
+TOP_P = 0.9 # Adjust top_p to control randomness. Example values: 0.8, 0.9, 0.95 (lower is less random, higher is more random)
 
 # Seeding control
 DEFAULT_SEED = 42  # ADDED: centralised deterministic seed

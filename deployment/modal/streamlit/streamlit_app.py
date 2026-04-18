@@ -183,3 +183,9 @@ if prompt := st.chat_input("I'm LoRAfrica, your African History Expert..."):
             "content": full_response
         }
     )
+
+    
+
+# Next features 
+# - Disable the ability to send another request when generation is not fully done
+# - Edit prompts after sending (e.g., to fix typos) and regenerate based on edited prompt while keeping the same conversation thread
