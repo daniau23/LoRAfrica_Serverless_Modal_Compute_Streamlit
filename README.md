@@ -91,6 +91,8 @@ That's it!! You have your working project all set and ready to GO! 🚀
 
 Check out the CPU version of this [project using Ollama and Llama.cpp](https://github.com/daniau23/LoRAfrica_CPU)
 
+**NB:** Kindly check tests in `modal/streamlit/tests`
+
 ## **Issues Faced**
 - Setting up LiteLLM as a proxy to monitor billing and token usage which would allow alerting messages on SLACK
 - Trying to rent the needed GPU on Runpod to condut experimentation of naive and vLLM approaches
