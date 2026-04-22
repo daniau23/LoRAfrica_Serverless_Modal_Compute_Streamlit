@@ -15,7 +15,13 @@ def handle_regeneration(user_prompt, temp_override=DEFAULT_REGEN_TEMP):
     
     # Increment regeneration index to track how many times
     #  we've regenerated for this prompt
+    if "regen_index" not in st.session_state or st.session_state.regen_index is None:
+        st.session_state.regen_index = 0
+
     st.session_state.regen_index += 1
+    # original working code line
+    # st.session_state.regen_index += 1
+    
 
     # Call the same generation function but 
     # with regeneration flags and temp override

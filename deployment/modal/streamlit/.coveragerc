@@ -1,0 +1,30 @@
+[run]
+# Coverage configuration for Streamlit app tests
+
+# Source packages to measure
+source = services, config, utils
+
+# Omit test files and Streamlit app from coverage (UI logic hard to test)
+omit = 
+    */tests/*
+    */__pycache__/*
+    */site-packages/*
+    streamlit_app.py
+
+[report]
+# Report options
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+# Coverage threshold
+fail_under = 70
+
+[html]
+# HTML report directory
+directory = htmlcov
